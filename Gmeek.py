@@ -422,6 +422,28 @@ class GMEEK():
     def runOne(self,number_str):
         print("====== start create static html ======")
         issue=self.repo.get_issue(int(number_str))
+        if issue.body:
+            print("====== start find and copy static images via URL ======")
+            image_dest_dir = os.path.join(self.root_dir, 'image')
+            os.makedirs(image_dest_dir, exist_ok=True)
+            home_url_pattern = re.escape(self.blogBase["homeUrl"])
+            image_pattern = r"https?://" + home_url_pattern + r"/image/([\w\-\.]+\.(?:webp|png|jpg|jpeg|gif|svg))"
+            filenames = re.findall(image_pattern, issue.body, re.IGNORECASE)
+            if filenames:
+                print(f"Found {len(filenames)} image URL(s) in issue body.")
+                for filename in set(filenames):
+                    src_path = os.path.join(self.static_dir, 'image', filename)
+                    dest_path = os.path.join(image_dest_dir, filename)
+
+                    if os.path.exists(src_path):
+                        shutil.copy2(src_path, dest_path)
+                        print(f"Copied: {src_path} -> {dest_path}")
+                    else:
+                        print(f"Warning: Source image file not found, skipped: {src_path}")
+            else:
+                print("No matching image URLs found in issue body.")
+            print("====== copy static images end ======")
+            
         if issue.state == "open":
             listJsonName=self.addOnePostJson(issue)
             self.createPostHtml(self.blogBase[listJsonName]["P"+number_str])
