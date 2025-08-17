@@ -422,13 +422,26 @@ class GMEEK():
     def runOne(self,number_str):
         print("====== start create static html ======")
         issue=self.repo.get_issue(int(number_str))
+
         if issue.body:
             print("====== start find and copy static images via URL ======")
             image_dest_dir = os.path.join(self.root_dir, 'image')
             os.makedirs(image_dest_dir, exist_ok=True)
-            home_url_pattern = re.escape(self.blogBase["homeUrl"])
+            
+            home_url = self.blogBase["homeUrl"]
+            
+            cleaned_home_url = home_url
+            if cleaned_home_url.startswith("https://"):
+                cleaned_home_url = cleaned_home_url[8:]
+            elif cleaned_home_url.startswith("http://"):
+                cleaned_home_url = cleaned_home_url[7:]
+            
+            home_url_pattern = re.escape(cleaned_home_url)
+            
             image_pattern = r"https?://" + home_url_pattern + r"/image/([\w\-\.]+\.(?:webp|png|jpg|jpeg|gif|svg))"
+            
             filenames = re.findall(image_pattern, issue.body, re.IGNORECASE)
+            
             if filenames:
                 print(f"Found {len(filenames)} image URL(s) in issue body.")
                 for filename in set(filenames):
