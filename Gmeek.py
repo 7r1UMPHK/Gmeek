@@ -339,9 +339,9 @@ class GMEEK():
                 self.blogBase[listJsonName][postNum]["wordCount"]=len(issue.body)
                 if self.blogBase["rssSplit"]=="sentence":
                     if self.blogBase["i18n"]=="CN":
-                        period=" "
+                        period="。"
                     else:
-                        period=" "
+                        period="."
                 else:
                     period=self.blogBase["rssSplit"]
                 self.blogBase[listJsonName][postNum]["description"]=issue.body.split(period)[0].replace("\"", "\'")+period
