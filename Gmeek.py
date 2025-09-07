@@ -296,6 +296,7 @@ class GMEEK():
             newFeed=open(self.root_dir+'new.xml','r',encoding='utf-8')
             new=newFeed.read()
             newFeed.close()
+
             new=re.sub(r'<lastBuildDate>.*?</lastBuildDate>','',new)
             old=re.sub(r'<lastBuildDate>.*?</lastBuildDate>','',self.oldFeedString)
             os.remove(self.root_dir+'new.xml')
@@ -306,8 +307,10 @@ class GMEEK():
                 feedFile.write(self.oldFeedString)
                 feedFile.close()
                 return
+
         print("====== create rss xml ======")
         feed.rss_file(self.root_dir+'rss.xml')
+
     def addOnePostJson(self,issue):
         if len(issue.labels)>=1:
             if issue.labels[0].name in self.blogBase["singlePage"]:
@@ -318,14 +321,17 @@ class GMEEK():
                 listJsonName='postListJson'
                 htmlFile='{}.html'.format(self.createFileName(issue))
                 gen_Html = self.post_dir+htmlFile
+
             postNum="P"+str(issue.number)
             self.blogBase[listJsonName][postNum]=json.loads('{}')
             self.blogBase[listJsonName][postNum]["htmlDir"]=gen_Html
             self.blogBase[listJsonName][postNum]["labels"]=[label.name for label in issue.labels]
             self.blogBase[listJsonName][postNum]["postTitle"]=issue.title
             self.blogBase[listJsonName][postNum]["postUrl"]=urllib.parse.quote(gen_Html[len(self.root_dir):])
+
             self.blogBase[listJsonName][postNum]["postSourceUrl"]="https://github.com/"+options.repo_name+"/issues/"+str(issue.number)
             self.blogBase[listJsonName][postNum]["commentNum"]=issue.get_comments().totalCount
+
             if issue.body==None:
                 self.blogBase[listJsonName][postNum]["description"]=''
                 self.blogBase[listJsonName][postNum]["wordCount"]=0
@@ -346,12 +352,14 @@ class GMEEK():
                     self.blogBase[listJsonName][postNum]["top"]=1
                 elif event.event=="unpinned":
                     self.blogBase[listJsonName][postNum]["top"]=0
+
             try:
                 postConfig=json.loads(issue.body.split("\r\n")[-1:][0].split("##")[1])
                 print("Has Custom JSON parameters")
                 print(postConfig)
             except:
                 postConfig={}
+
             if "timestamp" in postConfig:
                 self.blogBase[listJsonName][postNum]["createdAt"]=postConfig["timestamp"]
             else:
@@ -361,23 +369,28 @@ class GMEEK():
                 self.blogBase[listJsonName][postNum]["style"]=self.blogBase["style"]+str(postConfig["style"])
             else:
                 self.blogBase[listJsonName][postNum]["style"]=self.blogBase["style"]
+
             if "script" in postConfig:
                 self.blogBase[listJsonName][postNum]["script"]=self.blogBase["script"]+str(postConfig["script"])
             else:
                 self.blogBase[listJsonName][postNum]["script"]=self.blogBase["script"]
+
             if "head" in postConfig:
                 self.blogBase[listJsonName][postNum]["head"]=self.blogBase["head"]+str(postConfig["head"])
             else:
                 self.blogBase[listJsonName][postNum]["head"]=self.blogBase["head"]
+
             if "ogImage" in postConfig:
                 self.blogBase[listJsonName][postNum]["ogImage"]=postConfig["ogImage"]
             else:
                 self.blogBase[listJsonName][postNum]["ogImage"]=self.blogBase["ogImage"]
+
             thisTime=datetime.datetime.fromtimestamp(self.blogBase[listJsonName][postNum]["createdAt"])
             thisTime=thisTime.astimezone(self.TZ)
             thisYear=thisTime.year
             self.blogBase[listJsonName][postNum]["createdDate"]=thisTime.strftime("%Y-%m-%d")
             self.blogBase[listJsonName][postNum]["dateLabelColor"]=self.blogBase["yearColorList"][int(thisYear)%len(self.blogBase["yearColorList"])]
+
             mdFileName=re.sub(r'[<>:/\\|?*\"]|[\0-\31]', '-', issue.title)
             f = open(self.backup_dir+mdFileName+".md", 'w', encoding='UTF-8')
             
@@ -387,22 +400,29 @@ class GMEEK():
                 f.write(issue.body)
             f.close()
             return listJsonName
+
     def runAll(self):
         print("====== start create static html ======")
         self.cleanFile()
+
         issues=self.repo.get_issues()
         for issue in issues:
             self.addOnePostJson(issue)
+
         for issue in self.blogBase["postListJson"].values():
             self.createPostHtml(issue)
+
         for issue in self.blogBase["singeListJson"].values():
             self.createPostHtml(issue)
+
         self.createPlistHtml()
         self.createFeedXml()
         print("====== create static html end ======")
+
     def runOne(self,number_str):
         print("====== start create static html ======")
         issue=self.repo.get_issue(int(number_str))
+
         if issue.body:
             print("====== start find and copy static images via URL ======")
             image_dest_dir = os.path.join(self.root_dir, 'image')
@@ -427,6 +447,7 @@ class GMEEK():
                 for filename in set(filenames):
                     src_path = os.path.join(self.static_dir, 'image', filename)
                     dest_path = os.path.join(image_dest_dir, filename)
+
                     if os.path.exists(src_path):
                         shutil.copy2(src_path, dest_path)
                         print(f"Copied: {src_path} -> {dest_path}")
@@ -444,51 +465,7 @@ class GMEEK():
             print("====== create static html end ======")
         else:
             print("====== issue is closed ======")
-    def runLightUpdate(self):
-        """轻量级更新：只更新配置和插件，不重新抓取issues"""
-        print("====== start light update ======")
-        
-        # 保护现有的图片资源
-        temp_image_dir = None
-        if os.path.exists(os.path.join(self.root_dir, 'image')):
-            temp_image_dir = 'temp_image_backup'
-            shutil.move(os.path.join(self.root_dir, 'image'), temp_image_dir)
-            print("Backed up existing images")
-        
-        # 清理并重建目录结构
-        if os.path.exists(self.root_dir):
-            shutil.rmtree(self.root_dir)
-        
-        os.mkdir(self.root_dir)
-        os.mkdir(self.post_dir)
-        
-        # 恢复图片资源
-        if temp_image_dir and os.path.exists(temp_image_dir):
-            shutil.move(temp_image_dir, os.path.join(self.root_dir, 'image'))
-            print("Restored existing images")
-        
-        # 复制静态文件
-        if os.path.exists(self.static_dir):
-            for item in os.listdir(self.static_dir):
-                src = os.path.join(self.static_dir, item)
-                dst = os.path.join(self.root_dir, item)
-                if os.path.isfile(src):
-                    shutil.copy(src, dst)
-                    print(f"Copied {item} to docs")
-                elif os.path.isdir(src):
-                    shutil.copytree(src, dst)
-                    print(f"Copied directory {item} to docs")
-        
-        # 重新生成所有页面（使用现有数据）
-        for issue in self.blogBase["postListJson"].values():
-            self.createPostHtml(issue)
-        
-        for issue in self.blogBase["singeListJson"].values():
-            self.createPostHtml(issue)
-        
-        self.createPlistHtml()
-        self.createFeedXml()
-        print("====== light update end ======")
+
     def createFileName(self,issue,useLabel=False):
         if useLabel==True:
             fileName=issue.labels[0].name
@@ -502,14 +479,16 @@ class GMEEK():
         
         fileName=re.sub(r'[<>:/\\|?*\"]|[\0-\31]', '-', fileName)
         return fileName
+
 ######################################################################################
 parser = argparse.ArgumentParser()
 parser.add_argument("github_token", help="github_token")
 parser.add_argument("repo_name", help="repo_name")
 parser.add_argument("--issue_number", help="issue_number", default=0, required=False)
-parser.add_argument("--update_mode", help="update_mode", default="normal", required=False)
 options = parser.parse_args()
+
 blog=GMEEK(options)
+
 if not os.path.exists("blogBase.json"):
     print("blogBase is not exists, runAll")
     blog.runAll()
@@ -518,18 +497,7 @@ else:
         oldFeedFile=open(blog.root_dir+'rss.xml','r',encoding='utf-8')
         blog.oldFeedString=oldFeedFile.read()
         oldFeedFile.close()
-    
-    # 检查更新模式
-    if options.update_mode == "light":
-        print("Light update mode detected")
-        f=open("blogBase.json","r")
-        oldBlogBase=json.loads(f.read())
-        for key, value in oldBlogBase.items():
-            blog.blogBase[key] = value
-        f.close()
-        blog.blogBase["labelColorDict"]=blog.labelColorDict
-        blog.runLightUpdate()
-    elif options.issue_number=="0" or options.issue_number=="":
+    if options.issue_number=="0" or options.issue_number=="":
         print("issue_number=='0', runAll")
         blog.runAll()
     else:
@@ -541,9 +509,11 @@ else:
         f.close()
         blog.blogBase["labelColorDict"]=blog.labelColorDict
         blog.runOne(options.issue_number)
+
 listFile=open("blogBase.json","w")
 listFile.write(json.dumps(blog.blogBase))
 listFile.close()
+
 commentNumSum=0
 wordCount=0
 print("====== create postList.json file ======")
@@ -557,18 +527,24 @@ for i in blog.blogBase["postListJson"]:
     del blog.blogBase["postListJson"][i]["style"]
     del blog.blogBase["postListJson"][i]["top"]
     del blog.blogBase["postListJson"][i]["ogImage"]
+
     if 'head' in blog.blogBase["postListJson"][i]:
         del blog.blogBase["postListJson"][i]["head"]
+
     if 'commentNum' in blog.blogBase["postListJson"][i]:
         commentNumSum=commentNumSum+blog.blogBase["postListJson"][i]["commentNum"]
         del blog.blogBase["postListJson"][i]["commentNum"]
+
     if 'wordCount' in blog.blogBase["postListJson"][i]:
         wordCount=wordCount+blog.blogBase["postListJson"][i]["wordCount"]
         del blog.blogBase["postListJson"][i]["wordCount"]
+
 blog.blogBase["postListJson"]["labelColorDict"]=blog.labelColorDict
+
 docListFile=open(blog.root_dir+"postList.json","w")
 docListFile.write(json.dumps(blog.blogBase["postListJson"]))
 docListFile.close()
+
 if os.environ.get('GITHUB_EVENT_NAME')!='schedule':
     print("====== update readme file ======")
     workspace_path = os.environ.get('GITHUB_WORKSPACE')
