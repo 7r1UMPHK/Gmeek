@@ -90,7 +90,7 @@
 {% endblock %}
 
 {% block content %}
-{% if blogBase['prevUrl']=='disabled' %}<div style="margin-bottom: 16px;">{{ blogBase['subTitle'] }}</div>{% else %}<div class="pageNum">{{ blogBase['curPage'] }}-{{ blogBase['totalPage'] }}</div>{% endif %}
+{% if blogBase['prevUrl']=='disabled' %}<div style="margin-bottom: 16px;">{{ blogBase['subTitle'] }}</div>{% else %}<div class="pageNum">{{ blogBase['curPage'] }}</div>{% endif %}
 <nav class="SideNav border">
 {% for num in postListJson -%}
 <a class="SideNav-item d-flex flex-items-center flex-justify-between" href="{{ postListJson[num]['postUrl']|e }}">
@@ -131,8 +131,8 @@
 
 {% block script %}
 <script>
-document.getElementById("pathSearch").setAttribute("d",IconList["search"]);
-document.getElementById("pathRSS").setAttribute("d",IconList["rss"]);
+document.getElementById("pathSearch")?.setAttribute("d",IconList["search"]);
+document.getElementById("pathRSS")?.setAttribute("d",IconList["rss"]);
 iconTOP=document.getElementsByClassName("svgTop1");
 iconPost=document.getElementsByClassName("svgTop0");
 for(var i=0;i<iconTOP.length;i++){
@@ -144,11 +144,11 @@ for(var i=0;i<iconPost.length;i++){
 }
 
 {% for key, value in blogBase['exlink'].items() %}
-document.getElementById("{{ key }}").setAttribute("d",value=IconList["{{ key }}"]);
+document.getElementById("{{ key }}")?.setAttribute("d",value=IconList["{{ key }}"]);
 {%- endfor %}
 
 {% for num in blogBase['singeListJson'] -%}
-document.getElementById("{{ blogBase['singeListJson'][num]['postTitle'] }}").setAttribute("d",value=IconList["{{ blogBase['singeListJson'][num]['labels'][0] }}"]);
+document.getElementById("{{ blogBase['singeListJson'][num]['postTitle'] }}")?.setAttribute("d",value=IconList["{{ blogBase['singeListJson'][num]['labels'][0] }}"]);
 {%- endfor %}
 </script>
 {{ blogBase['indexScript'] }}

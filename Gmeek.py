@@ -457,6 +457,10 @@ class GMEEK():
             self.createPostHtml(issue,rendered.get(num))
 
         for num,issue in self.blogBase["singeListJson"].items():
+            staticPage=self.static_dir+issue["htmlDir"][len(self.root_dir):]
+            if os.path.exists(staticPage):
+                print("====== skip "+issue["htmlDir"]+", static version in static/ wins ======")
+                continue
             self.createPostHtml(issue,rendered.get(num))
 
         self.createPlistHtml()
