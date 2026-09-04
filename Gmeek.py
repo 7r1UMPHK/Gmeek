@@ -253,9 +253,11 @@ class GMEEK():
         tagIcon=dict(zip(keys, map(IconBase.get, keys)))
 
         postNum=len(self.blogBase["postListJson"])
+        self.blogBase["totalPage"]=(postNum+self.blogBase["onePageListNum"]-1)//self.blogBase["onePageListNum"]
         pageFlag=0
         while True:
             topNum=pageFlag*self.blogBase["onePageListNum"]
+            self.blogBase["curPage"]=pageFlag+1
             print("topNum=%d postNum=%d"%(topNum,postNum))
             if postNum<=self.blogBase["onePageListNum"]:
                 if pageFlag==0:
